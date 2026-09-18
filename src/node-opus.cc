@@ -111,7 +111,7 @@ Napi::Value NodeOpusEncoder::Encode(const CallbackInfo& args) {
 		return env.Null();
 	}
 
-	if (!args[0].IsBuffer()) {
+	if (!args[0].IsTypedArray()) {
 		Napi::TypeError::New(env, "Provided input needs to be a buffer").ThrowAsJavaScriptException();
 		return env.Null();
 	}
@@ -122,6 +122,11 @@ Napi::Value NodeOpusEncoder::Encode(const CallbackInfo& args) {
 	int frameSize = buf.Length() / 2 / this->channels;
 
 	int compressedLength = opus_encode(this->encoder, pcm, frameSize, &(this->outOpus[0]), MAX_PACKET_SIZE);
+
+	if (compressedLength < 0) {
+		Napi::Error::New(env, opus_strerror(compressedLength)).ThrowAsJavaScriptException();
+		return env.Null();
+	}
 
 	Buffer<char> actualBuf = Buffer<char>::Copy(env, reinterpret_cast<char*>(this->outOpus), compressedLength);
 
@@ -139,7 +144,7 @@ Napi::Value NodeOpusEncoder::Decode(const CallbackInfo& args) {
 		return env.Null();
 	}
 
-	if (!args[0].IsBuffer()) {
+	if (!args[0].IsTypedArray()) {
 		Napi::TypeError::New(env, "Provided input needs to be a buffer").ThrowAsJavaScriptException();
 		return env.Null();
 	}
